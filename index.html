@@ -1,0 +1,716 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>科级干部数据查询系统</title>
+    <!-- SheetJS 核心库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f5f7fb;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, 'Noto Sans', sans-serif;
+            padding: 20px 16px 48px 16px;
+            color: #1e293b;
+            font-size: clamp(15px, 4vw, 17px);
+        }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: clamp(28px, 6vw, 34px);
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e3c72, #2b4c7c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+        }
+        .privacy-note {
+            font-size: clamp(11px, 3vw, 13px);
+            color: #6c7a91;
+            background: #eef2f9;
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 30px;
+            margin-top: 8px;
+        }
+
+        .import-area {
+            background: white;
+            border-radius: 28px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e9edf2;
+        }
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #1e3c72;
+            color: white;
+            padding: 14px 0;
+            border-radius: 44px;
+            font-weight: 600;
+            font-size: clamp(16px, 4.5vw, 18px);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .file-label:active { background: #0f2b4f; transform: scale(0.97);}
+        .file-input { display: none; }
+        .import-status {
+            font-size: clamp(13px, 3.5vw, 15px);
+            text-align: center;
+            margin-top: 12px;
+            color: #2c6e2c;
+            background: #eaf9ea;
+            padding: 10px;
+            border-radius: 30px;
+        }
+        .status-error {
+            color: #b91c1c;
+            background: #fee2e2;
+        }
+
+        .filter-panel {
+            background: white;
+            border-radius: 28px;
+            padding: 18px 18px 12px 18px;
+            margin-bottom: 20px;
+            border: 1px solid #eef2f8;
+        }
+        .filter-group {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .filter-label {
+            font-weight: 700;
+            font-size: clamp(14px, 4vw, 16px);
+            color: #0f3b5c;
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+        .range-box {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+            max-width: 280px;
+        }
+        .range-input {
+            flex: 1;
+            min-width: 0;
+            background: #f8fafc;
+            border: 1px solid #cfdfed;
+            border-radius: 32px;
+            padding: 10px 12px;
+            font-size: clamp(13px, 3.5vw, 15px);
+            outline: none;
+            font-family: inherit;
+        }
+        .single-input {
+            flex: 1;
+            background: #f8fafc;
+            border: 1px solid #cfdfed;
+            border-radius: 32px;
+            padding: 10px 12px;
+            font-size: clamp(13px, 3.5vw, 15px);
+            outline: none;
+            max-width: 200px;
+        }
+        .checkbox-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: clamp(13px, 3.5vw, 15px);
+            cursor: pointer;
+        }
+        .checkbox-item input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #1e3c72;
+        }
+        .keyword-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .keyword-tag {
+            background: #f0f4fa;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-size: clamp(13px, 3.5vw, 15px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .keyword-tag input {
+            width: 18px;
+            height: 18px;
+            accent-color: #1e3c72;
+        }
+        select {
+            flex: 1;
+            background: #f8fafc;
+            border: 1px solid #cfdfed;
+            border-radius: 32px;
+            padding: 10px 12px;
+            font-size: clamp(13px, 3.5vw, 15px);
+            outline: none;
+            font-family: inherit;
+            max-width: 280px;
+        }
+        .stats-badge {
+            background: #eef2ff;
+            padding: 12px;
+            border-radius: 32px;
+            text-align: center;
+            font-size: clamp(14px, 4vw, 16px);
+            font-weight: 600;
+            color: #1e3a6b;
+            margin-top: 10px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+        .result-count {
+            font-weight: 700;
+            background: #eef2ff;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: clamp(13px, 3.5vw, 15px);
+        }
+
+        .staff-list {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .staff-card {
+            background: white;
+            border-radius: 28px;
+            padding: 22px 20px;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+            border: 1px solid #ecf3fa;
+            position: relative;
+        }
+        .excellence-badge {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            background: #fef3c7;
+            color: #b45309;
+            font-size: clamp(12px, 3.2vw, 14px);
+            font-weight: 700;
+            padding: 5px 14px;
+            border-radius: 30px;
+        }
+        .card-name-line {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-right: 100px;
+        }
+        .staff-name {
+            font-size: clamp(20px, 5.5vw, 26px);
+            font-weight: 800;
+            color: #0f2b3f;
+        }
+        .staff-id {
+            font-size: clamp(12px, 3.2vw, 14px);
+            color: #5c6f87;
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 16px;
+            margin-top: 8px;
+        }
+        .info-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: nowrap;
+            font-size: clamp(14px, 3.8vw, 16px);
+        }
+        .info-label {
+            font-weight: 700;
+            color: #6c7e9e;
+            flex-shrink: 0;
+            min-width: 70px;
+            font-size: 0.9em;
+        }
+        .info-value {
+            color: #1e293b;
+            font-weight: 500;
+            word-break: break-word;
+            flex: 1;
+            min-width: 0;
+        }
+        /* 考核结果样式：无背景，仅普通文本 */
+        .assessment-compact {
+            display: inline-block;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        @media (max-width: 480px) {
+            .info-item {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .info-label {
+                min-width: auto;
+                width: 100%;
+            }
+            .filter-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .filter-label {
+                min-width: auto;
+                margin-bottom: 4px;
+            }
+            .range-box {
+                max-width: 100%;
+                width: 100%;
+            }
+            .single-input, select {
+                max-width: 100%;
+                width: 100%;
+            }
+        }
+        .info-value {
+            overflow-wrap: break-word;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            background: #f9fbfd;
+            border-radius: 44px;
+            color: #6c86a3;
+            font-size: clamp(15px, 4vw, 17px);
+        }
+        footer {
+            text-align: center;
+            font-size: clamp(11px, 3vw, 12px);
+            color: #9aaebf;
+            margin-top: 28px;
+        }
+        .sub-hint {
+            font-size: 0.75em;
+            font-weight: normal;
+            color: #6c86a3;
+            margin-left: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>📁 科级干部数据查询系统</h1>
+        <div class="privacy-note">🔒 数据仅保存在本地，不上网、不泄密</div>
+    </div>
+
+    <div class="import-area">
+        <label class="file-label">
+            📂 导入 Excel 名册
+            <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" class="file-input">
+        </label>
+        <div id="importStatus" class="import-status">⚡ 等待导入文件</div>
+    </div>
+
+    <div class="filter-panel" id="filterPanel" style="display: none;">
+        <!-- 年龄范围 -->
+        <div class="filter-group">
+            <span class="filter-label">🎂 年龄范围 (岁)</span>
+            <div class="range-box">
+                <input type="number" id="ageMin" placeholder="最小" class="range-input" value="">
+                <span>—</span>
+                <input type="number" id="ageMax" placeholder="最大" class="range-input" value="">
+            </div>
+        </div>
+        <!-- 任正科级年限 ≥ -->
+        <div class="filter-group">
+            <span class="filter-label">📅 任正科级年限 (年) ≥</span>
+            <input type="number" id="yearsMin" placeholder="最小年限" step="1" class="single-input" value="">
+        </div>
+        <!-- 近三年考核优秀次数 ≥ -->
+        <div class="filter-group">
+            <span class="filter-label">⭐ 近三年考核优秀次数 ≥</span>
+            <input type="number" id="excellentMin" placeholder="最少次数" step="1" min="0" max="3" class="single-input" value="">
+        </div>
+        <!-- 是否曾多岗位历练 -->
+        <div class="filter-group">
+            <span class="filter-label">🔄 是否曾多岗位历练</span>
+            <label class="checkbox-item">
+                <input type="checkbox" id="multiPostFilter"> 仅显示“是”
+            </label>
+        </div>
+        <!-- 所在部门类别 -->
+        <div class="filter-group" style="flex-direction: column; align-items: flex-start;">
+            <span class="filter-label">
+                🏷️ 所在部门类别
+                <span class="sub-hint">（多选为同时满足，不选则不限）</span>
+            </span>
+            <div class="keyword-group" id="keywordGroup"></div>
+        </div>
+        <!-- 所在部门 -->
+        <div class="filter-group" style="flex-direction: column; align-items: flex-start;">
+            <span class="filter-label">🏢 所在部门</span>
+            <select id="deptSelect">
+                <option value="">全部部门</option>
+            </select>
+        </div>
+        <div class="stats-badge" id="liveStats">📊 筛选结果: 0 / 0</div>
+    </div>
+
+    <div class="result-header" id="resultHeader" style="display: none;">
+        <span class="result-count" id="resultCountSpan">👥 0人</span>
+    </div>
+    <div id="staffListContainer" class="staff-list"></div>
+    <footer>数据仅存于浏览器，刷新即清空</footer>
+</div>
+
+<script>
+    let rawStaffData = [];
+
+    const WORK_KEYWORDS = [
+        "#内设机构", "#事业中心", "#电视", "#广播", "#融媒",
+        "#职能", "#内容", "#技术", "#经营", "#党务"
+    ];
+    
+    // 强力清洗函数：移除所有空白字符
+    function cleanText(str) {
+        if (str === undefined || str === null) return "";
+        let cleaned = String(str)
+            .replace(/[\s\uFEFF\xA0\u2000-\u200F\u2028-\u202F\u205F\u2060\u3000\u180E]/g, '')
+            .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+            .trim();
+        return cleaned;
+    }
+    
+    function parseExcelToStaffData(dataRows, headers) {
+        const staffArray = [];
+        const fieldMap = {
+            "姓名": "name", "员工编号": "empId", "出生日期": "birthDate", "年龄": "age",
+            "性别": "gender", "现人员身份": "empType", "工作领域": "workField", "所在部门": "department",
+            "所在科室名称": "section", "职务名称": "jobTitle", "职务级别": "jobLevel",
+            "专业技术职务名称": "techTitle", "任现职时间": "currPositionDate", "任现职级时间": "currLevelDate",
+            "任正科级年限": "sectionLevelYears", "是否多岗位历练": "multiPost", "2023年年度考核": "assess2023",
+            "2024年年度考核": "assess2024", "2025年年度考核": "assess2025"
+        };
+        
+        for (let row of dataRows) {
+            let person = {};
+            for (let i = 0; i < headers.length; i++) {
+                let headerRaw = headers[i];
+                let mappedKey = fieldMap[headerRaw];
+                if (mappedKey) {
+                    let val = row[i] !== undefined && row[i] !== null ? row[i] : "";
+                    if (mappedKey === "age" || mappedKey === "sectionLevelYears") {
+                        let numVal = parseFloat(val);
+                        person[mappedKey] = isNaN(numVal) ? 0 : numVal;
+                    } else {
+                        person[mappedKey] = String(val).trim();
+                    }
+                }
+            }
+            if (!person.name) person.name = "未知";
+            if (!person.workField) person.workField = "";
+            if (!person.department) person.department = "";
+            if (!person.multiPost) person.multiPost = "";
+            
+            // 清洗考核字段并统计优秀次数
+            person.assess2023 = cleanText(person.assess2023);
+            person.assess2024 = cleanText(person.assess2024);
+            person.assess2025 = cleanText(person.assess2025);
+            let excellentCount = 0;
+            if (person.assess2023 === "优秀") excellentCount++;
+            if (person.assess2024 === "优秀") excellentCount++;
+            if (person.assess2025 === "优秀") excellentCount++;
+            person.excellentCount = excellentCount;
+            
+            let rawYears = person.sectionLevelYears;
+            if (isNaN(rawYears)) person.sectionLevelYearsInt = 0;
+            else person.sectionLevelYearsInt = Math.floor(rawYears);
+            
+            staffArray.push(person);
+        }
+        return staffArray;
+    }
+    
+    function importExcel(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: false, defval: "" });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+            if (!rows || rows.length < 2) {
+                showStatus("❌ 文件无数据或格式错误", true);
+                return;
+            }
+            const headers = rows[0].map(cell => String(cell || "").trim());
+            const required = ["姓名","工作领域","所在部门","任正科级年限","是否多岗位历练"];
+            const missing = required.filter(r => !headers.includes(r));
+            if (missing.length) {
+                showStatus(`⚠️ 缺少必要列: ${missing.join(", ")}`, true);
+                return;
+            }
+            const dataRows = rows.slice(1).filter(row => row.some(cell => cell && String(cell).trim() !== ""));
+            const staffList = parseExcelToStaffData(dataRows, headers);
+            if (staffList.length === 0) {
+                showStatus("⚠️ 未解析到有效人员数据", true);
+                return;
+            }
+            rawStaffData = staffList;
+            showStatus(`✅ 已加载: ${file.name} (${rawStaffData.length} 人)`, false);
+            document.getElementById("filterPanel").style.display = "block";
+            document.getElementById("resultHeader").style.display = "flex";
+            resetFilters();
+            buildKeywordCheckboxes();
+            applyFiltersAndRender();
+        };
+        reader.onerror = () => showStatus("❌ 文件读取失败", true);
+        reader.readAsArrayBuffer(file);
+    }
+    
+    function showStatus(msg, isError) {
+        const statusDiv = document.getElementById("importStatus");
+        statusDiv.innerText = msg;
+        if (isError) statusDiv.classList.add("status-error");
+        else statusDiv.classList.remove("status-error");
+        setTimeout(() => {
+            if (!isError && rawStaffData.length && statusDiv.innerText === msg) {
+                statusDiv.style.opacity = "0.7";
+                setTimeout(() => statusDiv.style.opacity = "1", 500);
+            }
+        }, 2000);
+    }
+    
+    function resetFilters() {
+        document.getElementById("ageMin").value = "";
+        document.getElementById("ageMax").value = "";
+        document.getElementById("yearsMin").value = "";
+        document.getElementById("excellentMin").value = "";
+        document.getElementById("multiPostFilter").checked = false;
+        const deptSelect = document.getElementById("deptSelect");
+        deptSelect.innerHTML = '<option value="">全部部门</option>';
+        deptSelect.value = "";
+        // 清空关键词复选框
+        const checkboxes = document.querySelectorAll("#keywordGroup .work-keyword-cb");
+        checkboxes.forEach(cb => cb.checked = false);
+    }
+    
+    function buildKeywordCheckboxes() {
+        const container = document.getElementById("keywordGroup");
+        if (!container) return;
+        container.innerHTML = "";
+        WORK_KEYWORDS.forEach(kw => {
+            const label = document.createElement("label");
+            label.className = "keyword-tag";
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = kw;
+            cb.classList.add("work-keyword-cb");
+            const span = document.createElement("span");
+            span.innerText = kw;
+            label.appendChild(cb);
+            label.appendChild(span);
+            container.appendChild(label);
+        });
+    }
+    
+    function getSelectedKeywords() {
+        const checkboxes = document.querySelectorAll("#keywordGroup .work-keyword-cb");
+        const selected = [];
+        checkboxes.forEach(cb => { if (cb.checked) selected.push(cb.value); });
+        return selected;
+    }
+    
+    function filterByWorkField(person, selectedKeywords) {
+        if (!selectedKeywords.length) return true;
+        const field = person.workField || "";
+        return selectedKeywords.every(kw => field.includes(kw));
+    }
+    
+    function getFilteredByAllExceptDept() {
+        if (!rawStaffData.length) return [];
+        const ageMin = parseFloat(document.getElementById("ageMin").value);
+        const ageMax = parseFloat(document.getElementById("ageMax").value);
+        const yearsMin = parseFloat(document.getElementById("yearsMin").value);
+        const exlMin = parseFloat(document.getElementById("excellentMin").value);
+        const multiChecked = document.getElementById("multiPostFilter").checked;
+        const selectedKeywords = getSelectedKeywords();
+        
+        return rawStaffData.filter(person => {
+            if (!isNaN(ageMin) && person.age < ageMin) return false;
+            if (!isNaN(ageMax) && person.age > ageMax) return false;
+            let yearsVal = person.sectionLevelYearsInt;
+            if (!isNaN(yearsMin) && yearsVal < yearsMin) return false;
+            let excellentCnt = person.excellentCount;
+            if (!isNaN(exlMin) && excellentCnt < exlMin) return false;
+            if (multiChecked && person.multiPost !== "是") return false;
+            return filterByWorkField(person, selectedKeywords);
+        });
+    }
+    
+    function updateDeptDropdownOptions() {
+        const deptSelect = document.getElementById("deptSelect");
+        if (!rawStaffData.length) return;
+        let baseFiltered = getFilteredByAllExceptDept();
+        const deptSet = new Set();
+        baseFiltered.forEach(p => { if (p.department && p.department.trim()) deptSet.add(p.department.trim()); });
+        const sortedDepts = Array.from(deptSet).sort((a,b) => a.localeCompare(b));
+        const currentSelected = deptSelect.value;
+        deptSelect.innerHTML = '<option value="">全部部门</option>';
+        sortedDepts.forEach(dept => {
+            const option = document.createElement("option");
+            option.value = dept;
+            option.textContent = dept;
+            deptSelect.appendChild(option);
+        });
+        if (currentSelected && sortedDepts.includes(currentSelected)) deptSelect.value = currentSelected;
+        else deptSelect.value = "";
+    }
+    
+    function getFinalFiltered() {
+        let filtered = getFilteredByAllExceptDept();
+        const selectedDept = document.getElementById("deptSelect").value;
+        if (selectedDept && selectedDept !== "") {
+            filtered = filtered.filter(p => p.department === selectedDept);
+        }
+        return filtered;
+    }
+    
+    function renderStaffCards(staffArray) {
+        const container = document.getElementById("staffListContainer");
+        if (!staffArray.length) {
+            container.innerHTML = `<div class="empty-state">✨ 暂无匹配人员<br>请调整筛选条件</div>`;
+            return;
+        }
+        let html = '';
+        for (let p of staffArray) {
+            const yearsDisplay = (p.sectionLevelYearsInt !== undefined && !isNaN(p.sectionLevelYearsInt)) ? p.sectionLevelYearsInt : (p.sectionLevelYears ? Math.floor(parseFloat(p.sectionLevelYears)) : 0);
+            const excellentTag = `优秀次数: ${p.excellentCount}`;
+            const assessCompact = `${p.assess2023 || '—'} / ${p.assess2024 || '—'} / ${p.assess2025 || '—'}`;
+            const multiPostDisplay = p.multiPost === '是' ? '是' : (p.multiPost === '否' ? '否' : '—');
+            
+            html += `
+                <div class="staff-card">
+                    <div class="excellence-badge">${escapeHtml(excellentTag)}</div>
+                    <div class="card-name-line">
+                        <span class="staff-name">${escapeHtml(p.name)}</span>
+                        <span class="staff-id">工号 ${escapeHtml(p.empId || '—')}</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">出生日期</span><span class="info-value">${escapeHtml(p.birthDate || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">年龄</span><span class="info-value">${p.age !== undefined && p.age !== '' ? p.age : '—'}</span></div>
+                        <div class="info-item"><span class="info-label">性别</span><span class="info-value">${escapeHtml(p.gender || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">人员身份</span><span class="info-value">${escapeHtml(p.empType || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">所在部门</span><span class="info-value">${escapeHtml(p.department || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">科室名称</span><span class="info-value">${escapeHtml(p.section || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">职务名称</span><span class="info-value">${escapeHtml(p.jobTitle || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">职务级别</span><span class="info-value">${escapeHtml(p.jobLevel || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">专业技术职务</span><span class="info-value">${escapeHtml(p.techTitle || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">任现职时间</span><span class="info-value">${escapeHtml(p.currPositionDate || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">任现职级时间</span><span class="info-value">${escapeHtml(p.currLevelDate || '—')}</span></div>
+                        <div class="info-item"><span class="info-label">任正科级年限</span><span class="info-value">${yearsDisplay} 年</span></div>
+                        <div class="info-item"><span class="info-label">多岗位历练</span><span class="info-value">${escapeHtml(multiPostDisplay)}</span></div>
+                        <div class="info-item"><span class="info-label">近三年考核</span><span class="assessment-compact">${escapeHtml(assessCompact)}</span></div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function applyFiltersAndRender() {
+        if (!rawStaffData.length) return;
+        updateDeptDropdownOptions();
+        const finalFiltered = getFinalFiltered();
+        const total = rawStaffData.length;
+        const filteredCount = finalFiltered.length;
+        document.getElementById("liveStats").innerHTML = `📊 筛选结果: ${filteredCount} / ${total}`;
+        document.getElementById("resultCountSpan").innerHTML = `👥 ${filteredCount}人`;
+        renderStaffCards(finalFiltered);
+    }
+    
+    function bindFilterEvents() {
+        const inputs = ['ageMin', 'ageMax', 'yearsMin', 'excellentMin'];
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => applyFiltersAndRender());
+        });
+        document.getElementById("multiPostFilter")?.addEventListener('change', () => applyFiltersAndRender());
+        document.getElementById("deptSelect")?.addEventListener('change', () => applyFiltersAndRender());
+        const keywordContainer = document.getElementById("keywordGroup");
+        if (keywordContainer) {
+            keywordContainer.addEventListener('change', (e) => {
+                if (e.target && e.target.classList && e.target.classList.contains('work-keyword-cb')) applyFiltersAndRender();
+            });
+        }
+    }
+    
+    function initFileUpload() {
+        document.getElementById("excelInput").addEventListener("change", (e) => {
+            if (e.target.files[0]) importExcel(e.target.files[0]);
+        });
+    }
+    
+    window.addEventListener("DOMContentLoaded", () => {
+        initFileUpload();
+        bindFilterEvents();
+        document.getElementById("filterPanel").style.display = "none";
+        document.getElementById("resultHeader").style.display = "none";
+    });
+</script>
+</body>
+</html>
